@@ -13,6 +13,33 @@ fn fiat_ref(env: &Env, s: &str) -> String {
     String::from_str(env, s)
 }
 
+fn currency(env: &Env, code: &str) -> String {
+    String::from_str(env, code)
+}
+
+fn record_with_currency(
+    client: &SettlementLedgerContractClient,
+    admin: &Address,
+    env: &Env,
+    seed: u8,
+    merchant: &Address,
+    amount: i128,
+    fee: i128,
+    cur: &str,
+) {
+    client.record_settlement(
+        admin,
+        &pid(env, seed),
+        merchant,
+        &amount,
+        &fee,
+        &(amount - fee),
+        &1_700_000_000u64,
+        &fiat_ref(env, "REF-001"),
+        &currency(env, cur),
+    );
+}
+
 fn setup() -> (Env, Address, SettlementLedgerContractClient<'static>) {
     let env = Env::default();
     env.mock_all_auths();
@@ -44,6 +71,7 @@ fn record(
         &(amount - fee),
         &1_700_000_000u64,
         &fiat_ref(env, "REF-001"),
+        &currency(env, "NGN"),
     );
 }
 
@@ -63,6 +91,7 @@ fn test_record_and_get() {
         &9_800,
         &1_700_000_000u64,
         &fiat_ref(&env, "TXN-ABC"),
+        &currency(&env, "NGN"),
     );
 
     let r = client.get_settlement(&pid(&env, 1));
@@ -70,6 +99,7 @@ fn test_record_and_get() {
     assert_eq!(r.fee, 200);
     assert_eq!(r.net, 9_800);
     assert_eq!(r.timestamp, 1_700_000_000u64);
+    assert_eq!(r.fiat_currency, currency(&env, "NGN"));
 }
 
 // ── administration ──────────────────────────────────────────────────────────
@@ -103,6 +133,7 @@ fn test_duplicate_record_panics() {
         &4_900,
         &1_700_000_001u64,
         &fiat_ref(&env, "DUP"),
+        &currency(&env, "NGN"),
     );
     assert!(result.is_err());
 }
@@ -142,6 +173,7 @@ fn test_invariant_fee_plus_net_equals_amount() {
         &9_500, // wrong: 300 + 9500 != 10000
         &1_700_000_000u64,
         &fiat_ref(&env, "BAD"),
+        &currency(&env, "NGN"),
     );
     assert!(result.is_err());
 }
@@ -161,7 +193,8 @@ fn test_configured_fee() {
         &160,
         &7_840,
         &1_700_000_000u64,
-        &fiat_ref(&env, "FEE"),
+        &fiat_ref(&env, "FREE"),
+        &currency(&env, "NGN"),
     );
 
     let r = client.get_settlement(&pid(&env, 4));

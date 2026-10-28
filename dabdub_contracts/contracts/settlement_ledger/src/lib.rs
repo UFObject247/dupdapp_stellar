@@ -20,6 +20,7 @@ pub struct SettlementRecord {
     pub net: i128,      // amount remitted to merchant (amount - fee)
     pub timestamp: u64, // Unix timestamp supplied by the caller (NestJS)
     pub fiat_ref: String, // bank / fiat-rail reference ID
+    pub currency: String, // ISO 4217 currency code (e.g. "NGN")
 }
 
 /// An append-only correction marker. The original settlement remains readable
@@ -129,6 +130,7 @@ impl SettlementLedgerContract {
         net: i128,
         timestamp: u64,
         fiat_ref: String,
+        currency: String,
     ) {
         caller.require_auth();
         Self::require_admin(&env, &caller);
@@ -163,6 +165,7 @@ impl SettlementLedgerContract {
             net,
             timestamp,
             fiat_ref: fiat_ref.clone(),
+            currency,
         };
 
         env.storage().persistent().set(&key, &record);

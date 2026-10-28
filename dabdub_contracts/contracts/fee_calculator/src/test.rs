@@ -2,7 +2,10 @@
 
 use crate::{FeeCalculatorContract, FeeCalculatorContractClient, FeeTier, FeeTiersUpdatedEvent};
 use proptest::prelude::*;
-use soroban_sdk::{testutils::{Address as _, Events as _, Ledger}, vec, Address, Env, IntoVal};
+use soroban_sdk::{
+    testutils::{Address as _, Events as _, Ledger},
+    vec, Address, Env, IntoVal,
+};
 
 fn setup_env() -> (
     Env,
@@ -86,15 +89,13 @@ fn test_volume_resets_after_30_days_by_ledger_count() {
     let (env, client, _admin, merchant, settlement_caller) = setup_env();
 
     client.calculate_fee(&settlement_caller, &merchant, &2_000); // puts merchant into 120 bps tier
-    let (_, _, bps_before_reset) =
-        client.calculate_fee(&settlement_caller, &merchant, &1);
+    let (_, _, bps_before_reset) = client.calculate_fee(&settlement_caller, &merchant, &1);
 
     assert_eq!(bps_before_reset, 120);
 
     env.ledger().with_mut(|li| li.sequence_number += 172_800);
 
-    let (_, _, bps_after_reset) =
-        client.calculate_fee(&settlement_caller, &merchant, &100);
+    let (_, _, bps_after_reset) = client.calculate_fee(&settlement_caller, &merchant, &100);
     assert_eq!(bps_after_reset, 150);
 }
 
